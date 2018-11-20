@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HT WebRTC</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/0.3.9/peer.min.js"></script>
+</head>
+
+<body>
+    <div>
+        <p id="peerID"></p>
+        <video id="localVideo" width="500px" controls autoplay></video>
+        <br>
+        <input type="text" id="desID" oninput="connect()">
+        <br>
+        <video id="remoteVideo" width="500px" controls autoplay></video>
+    </div>
+
+<script>
+    let localVideo = document.getElementById('localVideo');
+    let remoteVideo = document.getElementById('remoteVideo');
+    var sstream = null
+    navigator.mediaDevices.getUserMedia({audio: false, video: true})
+    .then((stream) => {
+        sstream = stream;
+       localVideo.srcObject = stream;
+    });
+</script>
+
+<script>
+    var peer = new Peer({host:'hcmiuiot.zapto.org', port:9000, path:'/'});
+    peer.on('open', function(id) {
+        document.getElementById('peerID').innerText = "peerID: " + id;
+    });
+    peer.on('data', (data) => {
+        console.log(data);
+    });
+    peer.on('call', (call) => {
+        console.log("incoming call");
+       // console.log(sstream);
+        call.answer(sstream);
+        call.on('stream', (stream) => {
+                console.log(stream);
+                remoteVideo.srcObject = stream;
+        })
+    })
+</script>
+
+<script>
+    function connect() {
+        let desId = document.getElementById('desID').value;
+        console.log(desId);
+        peer.connect(desId);
+        var call = peer.call(desId, sstream);
+        call.on('stream', (stream) => {
+            remoteVideo.srcObject = stream;
+        })
+    }
+</script>
+</body>
+
+</html>
