@@ -7,13 +7,32 @@
 
 <body>
     <div>
-        <p id="peerID"></p>
+        <p id="peerID">Connecting...</p>
         <video id="localVideo" width="500px" controls autoplay></video>
         <br>
-        <input type="text" id="desID" oninput="connect()">
+        Enter your partner peerID here:<input type="text" id="desID" oninput="connect()">
         <br>
         <video id="remoteVideo" width="500px" controls autoplay></video>
     </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+    <script>
+        let customConfig;
+        $( document ).ready( function () {
+            $.ajax ({
+                url: "https://global.xirsys.net/_turn/MyFirstApp/",
+                type: "PUT",
+                async: false,
+                headers: {
+                    "Authorization": "Basic " + btoa("hungthuanmk:b3e97082-eda1-11e8-80b1-0242ac110003")
+                },
+                success: function (res){
+                    customConfig = res.d;
+                    console.log("ICE List: "+res.d);
+                }
+            });
+        })
+    </script>
 
 <script>
     let localVideo = document.getElementById('localVideo');
@@ -27,7 +46,7 @@
 </script>
 
 <script>
-    var peer = new Peer({host:'112.213.87.91', port:9000, path:'/'});
+    var peer = new Peer({host:'112.213.87.91', port:9000, path:'/', config: customConfig});
     peer.on('open', function(id) {
         document.getElementById('peerID').innerText = "peerID: " + id;
     });
