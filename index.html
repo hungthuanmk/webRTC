@@ -3,12 +3,24 @@
 <head>
     <title>HT WebRTC</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/0.3.9/peer.min.js"></script>
+    <script>
+        function openStream() {
+            const config = { audio: true, video: true };
+            return navigator.mediaDevices.getUserMedia(config);
+        }
+
+        function playStream(idVideoTag, stream) {
+            const video = document.getElementById(idVideoTag);
+            video.srcObject = stream;
+            video.play();
+        }
+    </script>
 </head>
 
 <body>
     <div>
         <p id="peerID">Connecting...</p>
-        <video id="localVideo" width="500px" controls autoplay></video>
+        <video id="localVideo" width="500px" controls autoplay muted></video>
         <br>
         Enter your partner peerID here:<input type="text" id="desID" oninput="connect()">
         <br>
@@ -17,6 +29,7 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
     <script>
+	let peer;
         let customConfig;
         $( document ).ready( function () {
             $.ajax ({
@@ -26,53 +39,46 @@
                 headers: {
                     "Authorization": "Basic " + btoa("hungthuanmk:b3e97082-eda1-11e8-80b1-0242ac110003")
                 },
-                success: function (res){
-                    customConfig = res.d;
-                    console.log("ICE List: "+res.d);
-                }
-            });
-        })
-    </script>
-
-<script>
-    let localVideo = document.getElementById('localVideo');
-    let remoteVideo = document.getElementById('remoteVideo');
-    var sstream = null
-    navigator.mediaDevices.getUserMedia({audio: false, video: true})
-    .then((stream) => {
-        sstream = stream;
-       localVideo.srcObject = stream;
-    });
-</script>
-
-<script>
-    var peer = new Peer({host:'112.213.87.91', port:9000, path:'/', config: customConfig});
+                success: function (data, status){
+		    
+                    customConfig = data.v;
+                    console.log(customConfig);
+			peer = new Peer({host:'112.213.87.91', port:9000, path:'/', config: customConfig});
     peer.on('open', function(id) {
         document.getElementById('peerID').innerText = "peerID: " + id;
     });
-    peer.on('data', (data) => {
-        console.log(data);
-    });
-    peer.on('call', (call) => {
+
+    peer.on('call', call => {
         console.log("incoming call");
-       // console.log(sstream);
-        call.answer(sstream);
-        call.on('stream', (stream) => {
-                console.log(stream);
-                remoteVideo.srcObject = stream;
-        })
+       openStream()
+           .then(stream => {
+               call.answer(stream);
+               playStream('localVideo', stream);
+               call.on('stream', remoteStream => playStream('remoteVideo', remoteStream));
+           })
     })
+                }
+            });
+        })
+    let localVideo = document.getElementById('localVideo');
+    let remoteVideo = document.getElementById('remoteVideo');
+    // navigator.mediaDevices.getUserMedia({audio: false, video: true})
+    // .then((stream) => {
+    //    localVideo.srcObject = stream;
+    // });
+    
+
 </script>
 
 <script>
     function connect() {
         let desId = document.getElementById('desID').value;
-        console.log(desId);
-        peer.connect(desId);
-        var call = peer.call(desId, sstream);
-        call.on('stream', (stream) => {
-            remoteVideo.srcObject = stream;
-        })
+        openStream()
+            .then( stream => {
+                playStream('localVideo', stream);
+                const call = peer.call(desId, stream);
+                call.on('stream', remoteStream => playStream('remoteVideo', remoteStream));
+            })
     }
 </script>
 </body>
